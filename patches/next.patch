@@ -1,0 +1,143 @@
+diff --git a/dist/client/app-call-server.js b/dist/client/app-call-server.js
+index 31b8e1d607ef8b8bbec6c748b4cd279942c38fb6..06bad2774171f5912b6cfedded74b1e961bed1f0 100644
+--- a/dist/client/app-call-server.js
++++ b/dist/client/app-call-server.js
+@@ -37,6 +37,7 @@ function useServerActionDispatcher(dispatch) {
+     globalServerActionDispatcher = serverActionDispatcher;
+ }
+ async function callServer(actionId, actionArgs) {
++    console.log('callServer', actionId, actionArgs);
+     const actionDispatcher = globalServerActionDispatcher;
+     if (!actionDispatcher) {
+         throw new Error('Invariant: missing action dispatcher.');
+diff --git a/dist/client/app-index.js b/dist/client/app-index.js
+index c97d923e14e0e4fe845661545d9b55735fc2417a..a043f1803d7a736a50206e29dd73d5cf0eaa7ccf 100644
+--- a/dist/client/app-index.js
++++ b/dist/client/app-index.js
+@@ -138,6 +138,7 @@ const pendingActionQueue = new Promise((resolve, reject)=>{
+ });
+ function ServerRoot() {
+     const initialRSCPayload = (0, _react.use)(initialServerResponse);
++    console.log({ initialRSCPayload });
+     const actionQueue = (0, _react.use)(pendingActionQueue);
+     const router = /*#__PURE__*/ (0, _jsxruntime.jsx)(_approuter.default, {
+         actionQueue: actionQueue,
+diff --git a/dist/client/components/app-router.js b/dist/client/components/app-router.js
+index c07c342376588320db177d7450314df71d205882..dec430e1b4d422e992037483ac81e67a1a9e70df 100644
+--- a/dist/client/components/app-router.js
++++ b/dist/client/components/app-router.js
+@@ -160,6 +160,7 @@ function Head(param) {
+  */ function Router(param) {
+     let { actionQueue, assetPrefix } = param;
+     const [state, dispatch] = (0, _usereducer.useReducer)(actionQueue);
++    console.log('Router state', (0, _usereducer.useUnwrapState)(state));
+     const { canonicalUrl } = (0, _usereducer.useUnwrapState)(state);
+     // Add memoized pathname/query for useSearchParams and usePathname.
+     const { searchParams, pathname } = (0, _react.useMemo)(()=>{
+diff --git a/dist/client/components/router-reducer/apply-flight-data.js b/dist/client/components/router-reducer/apply-flight-data.js
+index 6969d30629deb52242acbd7f6076d1771ba8e9ed..90fe7b40c00d2e96c6211335f29cd40a49e39a0d 100644
+--- a/dist/client/components/router-reducer/apply-flight-data.js
++++ b/dist/client/components/router-reducer/apply-flight-data.js
+@@ -10,7 +10,9 @@ Object.defineProperty(exports, "applyFlightData", {
+ });
+ const _filllazyitemstillleafwithhead = require("./fill-lazy-items-till-leaf-with-head");
+ const _fillcachewithnewsubtreedata = require("./fill-cache-with-new-subtree-data");
+-function applyFlightData(existingCache, cache, flightData, prefetchEntry) {
++
++const { wrap } = require('../../../methodWrapper');
++const applyFlightData = wrap(function applyFlightData(existingCache, cache, flightData, prefetchEntry) {
+     // The one before last item is the router state tree patch
+     const { tree: treePatch, seedData, head, isRootRender } = flightData;
+     // Handles case where prefetch only returns the router tree patch without rendered components.
+@@ -42,7 +44,7 @@ function applyFlightData(existingCache, cache, flightData, prefetchEntry) {
+         (0, _fillcachewithnewsubtreedata.fillCacheWithNewSubTreeData)(cache, existingCache, flightData, prefetchEntry);
+     }
+     return true;
+-}
++});
+ 
+ if ((typeof exports.default === 'function' || (typeof exports.default === 'object' && exports.default !== null)) && typeof exports.default.__esModule === 'undefined') {
+   Object.defineProperty(exports.default, '__esModule', { value: true });
+diff --git a/dist/client/components/router-reducer/fetch-server-response.js b/dist/client/components/router-reducer/fetch-server-response.js
+index db642868d15f8fbf9e4e799a37bd18839c53672a..66d49b5b33ec983f4cc174c5ced6a42253dfa9e3 100644
+--- a/dist/client/components/router-reducer/fetch-server-response.js
++++ b/dist/client/components/router-reducer/fetch-server-response.js
+@@ -16,6 +16,7 @@ const _appfindsourcemapurl = require("../../app-find-source-map-url");
+ const _routerreducertypes = require("./router-reducer-types");
+ const _hash = require("../../../shared/lib/hash");
+ const _flightdatahelpers = require("../../flight-data-helpers");
++const { wrap } = require('../../../methodWrapper');
+ // @ts-ignore
+ // eslint-disable-next-line import/no-extraneous-dependencies
+ // import { createFromFetch } from 'react-server-dom-webpack/client'
+@@ -34,6 +35,7 @@ function urlToUrlWithoutFlightMarker(url) {
+     return urlWithoutFlightParameters;
+ }
+ function doMpaNavigation(url) {
++    console.log('doMpaNavigation', url);
+     return {
+         flightData: urlToUrlWithoutFlightMarker(url).toString(),
+         canonicalUrl: undefined,
+@@ -43,7 +45,7 @@ function doMpaNavigation(url) {
+         staleTime: -1
+     };
+ }
+-async function fetchServerResponse(url, options) {
++var fetchServerResponse = wrap(async function fetchServerResponse(url, options) {
+     const { flightRouterState, nextUrl, buildId, prefetchKind } = options;
+     const headers = {
+         // Enable flight response
+@@ -95,6 +97,7 @@ async function fetchServerResponse(url, options) {
+         if (process.env.__NEXT_TEST_MODE) {
+             headers['Next-Test-Fetch-Priority'] = fetchPriority;
+         }
++        console.log('fetchServerResponse', { fetchUrl: fetchUrl.toString(), headers, fetchPriority });
+         const res = await fetch(fetchUrl, {
+             // Backwards compat for older browsers. `same-origin` is the default in modern browsers.
+             credentials: 'same-origin',
+@@ -137,6 +140,7 @@ async function fetchServerResponse(url, options) {
+             callServer: _appcallserver.callServer,
+             findSourceMapURL: _appfindsourcemapurl.findSourceMapURL
+         });
++        console.log('fetchServerResponse', { response });
+         if (buildId !== response.b) {
+             return doMpaNavigation(res.url);
+         }
+@@ -162,7 +166,7 @@ async function fetchServerResponse(url, options) {
+             staleTime: -1
+         };
+     }
+-}
++});
+ 
+ if ((typeof exports.default === 'function' || (typeof exports.default === 'object' && exports.default !== null)) && typeof exports.default.__esModule === 'undefined') {
+   Object.defineProperty(exports.default, '__esModule', { value: true });
+diff --git a/dist/client/components/router-reducer/router-reducer.js b/dist/client/components/router-reducer/router-reducer.js
+index fc1e0dc1a92e634a1a56010a0770e60636d824f8..c3ebb7aad42f634dd1f09f82724f2e1607d7d2c3 100644
+--- a/dist/client/components/router-reducer/router-reducer.js
++++ b/dist/client/components/router-reducer/router-reducer.js
+@@ -19,6 +19,7 @@ const _serveractionreducer = require("./reducers/server-action-reducer");
+ /**
+  * Reducer that handles the app-router state updates.
+  */ function clientReducer(state, action) {
++    console.log('clientReducer', { state, action });
+     switch(action.type){
+         case _routerreducertypes.ACTION_NAVIGATE:
+             {
+diff --git a/dist/methodWrapper.js b/dist/methodWrapper.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..0d0c2642d278ab3b3f5dae315b7a179790be829f
+--- /dev/null
++++ b/dist/methodWrapper.js
+@@ -0,0 +1,11 @@
++module.exports.wrap = function (fn, suffix) {
++  let name = fn.name;
++  if (suffix) name += ` ${suffix}`;
++
++  return function () {
++    console.group(name);
++    var result = fn.apply(undefined, arguments);
++    console.groupEnd();
++    return result;
++  }
++}
