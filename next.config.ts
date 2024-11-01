@@ -7,6 +7,12 @@ const nextConfig: NextConfig = {
   experimental: {
     serverMinification: false,
   },
+  logging: {
+    fetches: {
+      fullUrl: true,
+      hmrRefreshes: true,
+    },
+  },
 };
 
 export default nextConfig;
